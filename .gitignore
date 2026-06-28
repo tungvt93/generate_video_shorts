@@ -1,0 +1,32 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Secrets
+.env
+.env.local
+.venv
+env/
+venv/
+ENV/
+
+# Project output & download folders (large video files)
+downloads/
+output_shorts/
+
+# PyInstaller build outputs
+build/
+dist/
+*.spec
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS temporary files
+.DS_Store
+Thumbs.db

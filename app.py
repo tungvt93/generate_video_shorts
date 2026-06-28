@@ -54,19 +54,32 @@ def process_video_pipeline(
         raise gr.Error("❌ Không tìm thấy tệp video để xử lý.")
 
     # Validate min/max duration
-    min_d = float(min_dur)
-    max_d = float(max_dur)
-    if min_d > max_d:
-        min_d, max_d = max_d, min_d  # Auto swap if inverted
+    use_custom_duration = True
+    if dynamic_length or min_dur is None or max_dur is None:
+        use_custom_duration = False
+        min_d, max_d = 8.0, 10.0
+    else:
+        try:
+            min_d = float(min_dur)
+            max_d = float(max_dur)
+            if min_d <= 0 or max_d <= 0:
+                use_custom_duration = False
+                min_d, max_d = 8.0, 10.0
+            elif min_d > max_d:
+                min_d, max_d = max_d, min_d  # Auto swap if inverted
+        except ValueError:
+            use_custom_duration = False
+            min_d, max_d = 8.0, 10.0
 
     # Step 2: Analyze with Gemini AI
-    progress(0.4, desc=f"Đang gửi video lên Gemini AI để phân tích ({min_d}s-{max_d}s)...")
+    desc_str = f"({min_d}s-{max_d}s)" if use_custom_duration else "(Tự do/AI tự tính)"
+    progress(0.4, desc=f"Đang gửi video lên Gemini AI để phân tích {desc_str}...")
     try:
         highlights = analyze_video_for_highlights(
             video_path=video_path,
             num_clips=int(num_clips),
             api_key=api_key,
-            strict_8_10=not dynamic_length,
+            strict_8_10=use_custom_duration,
             min_clip_duration=min_d,
             max_clip_duration=max_d
         )
@@ -135,8 +148,8 @@ with gr.Blocks(theme=theme, title="Gemini Auto Shorts Generator") as demo:
             )
             
             with gr.Row():
-                min_dur_input = gr.Number(label="⏱️ Độ dài Tối thiểu (Giây)", value=8, precision=0)
-                max_dur_input = gr.Number(label="⏱️ Độ dài Tối đa (Giây)", value=10, precision=0)
+                min_dur_input = gr.Number(label="⏱️ Độ dài Tối thiểu (Giây) - Để trống nếu muốn AI tự tính", value=None, precision=0)
+                max_dur_input = gr.Number(label="⏱️ Độ dài Tối đa (Giây) - Để trống nếu muốn AI tự tính", value=None, precision=0)
 
             speed_slider = gr.Slider(
                 minimum=0.8,
@@ -146,7 +159,7 @@ with gr.Blocks(theme=theme, title="Gemini Auto Shorts Generator") as demo:
                 label="⚡ Tốc độ video đầu ra (Mặc định 1.2x)"
             )
             dynamic_length_check = gr.Checkbox(
-                label="🔓 Độ dài tự do (Bỏ qua cấu hình Min/Max, để Gemini tự quyết định độ dài clip theo nội dung)",
+                label="🔓 Ép AI tự quyết định độ dài clip phù hợp theo nội dung",
                 value=False
             )
             api_key_box = gr.Textbox(
